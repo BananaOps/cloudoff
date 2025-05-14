@@ -27,9 +27,6 @@ func ScheduleEC2Instance() {
 		if instance.State == "stopped" {
 			UpscaleSchedule(instance)
 		}
-		/*else {
-			fmt.Printf("Instance %s is not running\n", instance.ID)
-		}*/
 
 	}
 }
@@ -99,7 +96,7 @@ func DownscaleSchedule(instance ec2.Instance) {
 
 }
 
-func UpcaleSchedule(instance ec2.Instance) {
+func UpscaleSchedule(instance ec2.Instance) {
 
 	for _, tag := range instance.Tags {
 		if tag.Key == "cloudoff:upscale" {
