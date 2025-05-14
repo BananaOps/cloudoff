@@ -12,8 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	ec2 "github.com/bananaops/cloudoff/internal/aws"
+	"github.com/bananaops/cloudoff/internal/scheduler"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/robfig/cron/v3"
 
 	"github.com/spf13/cobra"
 )
@@ -40,11 +41,19 @@ var serv = &cobra.Command{
 			ErrorLog:          httplogger,
 		}
 
-		ec2 := ec2.DiscoverEC2Instances()
-		if len(ec2) == 0 {
-			slog.Info("no ec2 instances found")
+		c := cron.New()
+
+		// Ajouter une tâche
+		_, err := c.AddFunc("* * * * *", scheduler.ScheduleEC2Instance)
+		if err != nil {
+			log.Fatalf("Error adding scheduled task : %v", err)
 		}
 
+		// Démarrer le planificateur
+		c.Start()
+		log.Println("task planner started")
+
+	
 		go func() {
 			// Exposer prometheus metrics
 			slog.Info("metrics server listening on :8080")

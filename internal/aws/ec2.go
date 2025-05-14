@@ -2,7 +2,6 @@ package ec2
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -17,11 +16,12 @@ type Tag struct {
 }
 
 type Instance struct {
+	ID               string
 	Name             string
 	PrivateIpAddress string
 	InstanceId       string
 	Region           string
-	Status           string
+	State            string
 	Tags             []Tag
 }
 
@@ -66,15 +66,14 @@ func DiscoverEC2Instances() []Instance {
 					break
 				}
 			}
-			 
-			fmt.Println("status:", instance.State.Name)
 
 			listInstances = append(listInstances, Instance{
+				ID:               *instance.InstanceId,
 				Name:             *title,
 				PrivateIpAddress: *instance.PrivateIpAddress,
 				InstanceId:       *instance.InstanceId,
 				Region:           svc.Options().Region,
-				Status: 		 string(instance.State.Name),
+				State:            string(instance.State.Name),
 				Tags:             ConvertToCustomTag(instance.Tags),
 			})
 		}

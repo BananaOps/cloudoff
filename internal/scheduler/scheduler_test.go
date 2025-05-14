@@ -7,72 +7,94 @@ import (
 
 func TestParseSchedule(t *testing.T) {
 	tests := []struct {
+		name     string
 		input    string
-		expected Schedule
-		hasError bool
+		expected []Schedule
+		wantErr  bool
 	}{
 		{
+			name:  "Single day with time range",
+			input: "Sun 00:00-23:59",
+			expected: []Schedule{
+				{
+					Days:  []string{"Sun"},
+					Start: "00:00",
+					End:   "23:59",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "Range of days with time range",
 			input: "Mon-Fri 09:00-17:00",
-			expected: Schedule{
-				Days:  []string{"Mon", "Tue", "Wed", "Thu", "Fri"},
-				Start: "09:00",
-				End:   "17:00",
+			expected: []Schedule{
+				{
+					Days:  []string{"Mon", "Tue", "Wed", "Thu", "Fri"},
+					Start: "09:00",
+					End:   "17:00",
+				},
 			},
-			hasError: false,
+			wantErr: false,
 		},
 		{
-			input: "Sat-Sun 10:00-18:00",
-			expected: Schedule{
-				Days:  []string{"Sat", "Sun"},
-				Start: "10:00",
-				End:   "18:00",
+			name:  "Multiple schedules",
+			input: "Mon-Fri 09:00-17:00,Sun 00:00-23:59",
+			expected: []Schedule{
+				{
+					Days:  []string{"Mon", "Tue", "Wed", "Thu", "Fri"},
+					Start: "09:00",
+					End:   "17:00",
+				},
+				{
+					Days:  []string{"Sun"},
+					Start: "00:00",
+					End:   "23:59",
+				},
 			},
-			hasError: false,
+			wantErr: false,
 		},
 		{
-			input: "Mon 08:00-12:00",
-			expected: Schedule{
-				Days:  []string{"Mon"},
-				Start: "08:00",
-				End:   "12:00",
+			name:     "Invalid format (missing time range)",
+			input:    "Mon-Fri",
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "Invalid day range",
+			input:    "Mon-Funday 09:00-17:00",
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "Invalid time range",
+			input:    "Mon-Fri 09:00",
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:  "Single day without range",
+			input: "Tue 10:00-12:00",
+			expected: []Schedule{
+				{
+					Days:  []string{"Tue"},
+					Start: "10:00",
+					End:   "12:00",
+				},
 			},
-			hasError: false,
-		},
-		{
-			input:    "Mon-Fri 09:00", // Format invalide (manque l'heure de fin)
-			expected: Schedule{},
-			hasError: true,
-		},
-		{
-			input:    "Mon-Fri09:00-17:00", // Format invalide (manque l'espace entre jours et heures)
-			expected: Schedule{},
-			hasError: true,
-		},
-		{
-			input:    "Fri-Mon 09:00-17:00", // Ordre des jours invalide
-			expected: Schedule{},
-			hasError: true,
-		},
-		{
-			input:    "Invalid 09:00-17:00", // Jours invalides
-			expected: Schedule{},
-			hasError: true,
+			wantErr: false,
 		},
 	}
 
-	for _, test := range tests {
-		result, err := ParseSchedule(test.input)
-		if test.hasError {
-			if err == nil {
-				t.Errorf("Expected error for input '%s', but got none", test.input)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseSchedule(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseSchedule() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
-		} else {
-			if err != nil {
-				t.Errorf("Did not expect error for input '%s', but got: %v", test.input, err)
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("ParseSchedule() = %v, expected %v", got, tt.expected)
 			}
-			if !reflect.DeepEqual(result, test.expected) {
-				t.Errorf("For input '%s', expected %+v but got %+v", test.input, test.expected, result)
-			}
-		}
+		})
 	}
 }
