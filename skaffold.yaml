@@ -1,0 +1,17 @@
+apiVersion: skaffold/v2beta28
+kind: Config
+build:
+  artifacts:
+    - image: bananaops/cloudoff
+      ko: {}
+deploy:
+  helm:
+    releases:
+      - name: cloudoff
+        chartPath: helm/cloudoff
+        namespace: cloudoff
+        createNamespace: true
+        artifactOverrides:
+          image: bananaops/cloudoff
+        imageStrategy:
+          helm: {}
