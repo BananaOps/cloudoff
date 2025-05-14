@@ -2,6 +2,7 @@ package ec2
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -16,6 +17,7 @@ type Tag struct {
 }
 
 type Instance struct {
+	Spot             bool
 	ID               string
 	Name             string
 	PrivateIpAddress string
@@ -67,7 +69,14 @@ func DiscoverEC2Instances() []Instance {
 				}
 			}
 
+			var spot bool = false
+
+			if instance.InstanceLifecycle == "spot" {
+				spot = true
+			}
+
 			listInstances = append(listInstances, Instance{
+				Spot:             spot,
 				ID:               *instance.InstanceId,
 				Name:             *title,
 				PrivateIpAddress: *instance.PrivateIpAddress,
@@ -94,4 +103,54 @@ func ConvertToCustomTag(instanceTag []types.Tag) []Tag {
 	}
 	return customTags
 
+}
+
+func StopInstance(instanceID, region string) error {
+	// Charger la configuration AWS
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+	if err != nil {
+		return fmt.Errorf("erreur lors du chargement de la configuration AWS : %v", err)
+	}
+
+	// Créer un client EC2
+	ec2Client := ec2.NewFromConfig(cfg)
+
+	// Préparer l'entrée pour StopInstances
+	input := &ec2.StopInstancesInput{
+		InstanceIds: []string{instanceID},
+	}
+
+	// Appeler StopInstances
+	_, err = ec2Client.StopInstances(context.TODO(), input)
+	if err != nil {
+		return fmt.Errorf("erreur lors de l'arrêt de l'instance %s : %v", instanceID, err)
+	}
+
+	fmt.Printf("Instance %s arrêtée avec succès.\n", instanceID)
+	return nil
+}
+
+func StartInstance(instanceID, region string) error {
+	// Charger la configuration AWS
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+	if err != nil {
+		return fmt.Errorf("erreur lors du chargement de la configuration AWS : %v", err)
+	}
+
+	// Créer un client EC2
+	ec2Client := ec2.NewFromConfig(cfg)
+
+	// Préparer l'entrée pour StopInstances
+	input := &ec2.StartInstancesInput{
+		InstanceIds: []string{instanceID},
+	}
+
+	// Appeler StopInstances
+	_, err = ec2Client.StartInstances(context.TODO(), input)
+	if err != nil {
+		return fmt.Errorf("erreur lors du démarrage de l'instance %s : %v", instanceID, err)
+	}
+
+	fmt.Printf("Instance %s démarré avec succès.\n", instanceID)
+	return nil
 }

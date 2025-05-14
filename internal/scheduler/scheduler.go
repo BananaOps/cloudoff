@@ -56,9 +56,9 @@ func DownscaleSchedule(instance ec2.Instance) {
 				}
 				if isInSchedule {
 					fmt.Printf("Instance %s is scheduled to stop on %v from %s to %s\n", instance.ID, schedule.Days, schedule.Start, schedule.End)
+					ec2.StopInstance(instance.ID, instance.Region)
 				}
 			}
-
 		}
 
 		if tag.Key == "cloudoff:upscale" {
@@ -91,6 +91,7 @@ func DownscaleSchedule(instance ec2.Instance) {
 
 			if !uptime {
 				fmt.Printf("Instance %s is scheduled to stop is not in upscale period %s\n", instance.ID, schedules)
+				ec2.StopInstance(instance.ID, instance.Region)
 			}
 
 		}
@@ -98,7 +99,69 @@ func DownscaleSchedule(instance ec2.Instance) {
 
 }
 
-func UpscaleSchedule(instance ec2.Instance) {
+func UpcaleSchedule(instance ec2.Instance) {
+
+	for _, tag := range instance.Tags {
+		if tag.Key == "cloudoff:upscale" {
+			schedules, err := ParseSchedule(tag.Value)
+			if err != nil {
+				fmt.Printf("Error parsing schedule for instance %s: %v\n", instance.ID, err)
+				continue
+			}
+
+			// Heure actuelle
+			currentTime := time.Now()
+
+			for _, schedule := range schedules {
+
+				// Vérifier si l'heure actuelle et le jour sont dans l'horaire
+				isInSchedule, err := IsTimeInSchedule(currentTime, schedule)
+				if err != nil {
+					fmt.Println("Erreur :", err)
+				}
+				if isInSchedule {
+					fmt.Printf("Instance %s is scheduled to start on %v from %s to %s\n", instance.ID, schedule.Days, schedule.Start, schedule.End)
+					ec2.StartInstance(instance.ID, instance.Region)
+				}
+			}
+		}
+
+		if tag.Key == "cloudoff:downscale" {
+			schedules, err := ParseSchedule(tag.Value)
+			if err != nil {
+				fmt.Printf("Error parsing schedule for instance %s: %v\n", instance.ID, err)
+				continue
+			}
+
+			// Heure actuelle
+			currentTime := time.Now()
+
+			var uptime bool = false
+
+			for _, schedule := range schedules {
+
+				// Vérifier si l'heure actuelle et le jour sont dans l'horaire
+				isInSchedule, err := IsTimeInSchedule(currentTime, schedule)
+
+				if err != nil {
+					fmt.Println("Erreur :", err)
+				}
+				if isInSchedule {
+					uptime = true
+					break
+
+				}
+
+			}
+
+			if !uptime {
+				fmt.Printf("Instance %s is scheduled to start is not in downscale period %s\n", instance.ID, schedules)
+				ec2.StartInstance(instance.ID, instance.Region)
+			}
+
+		}
+	}
+
 }
 
 // ParseSchedule analyse une chaîne contenant plusieurs plages horaires
