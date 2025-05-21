@@ -2,11 +2,15 @@ package scheduler
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
 	"strings"
 	"time"
 
 	ec2 "github.com/bananaops/cloudoff/internal/aws"
 )
+
+var logger *slog.Logger
 
 // Structure pour représenter les jours et les heures
 type Schedule struct {
@@ -34,7 +38,7 @@ func ScheduleEC2Instance() {
 func DownscaleSchedule(instance ec2.Instance) {
 
 	for _, tag := range instance.Tags {
-		if tag.Key == "cloudoff:downscale" {
+		if tag.Key == "cloudoff:downtime" {
 			schedules, err := ParseSchedule(tag.Value)
 			if err != nil {
 				fmt.Printf("Error parsing schedule for instance %s: %v\n", instance.ID, err)
@@ -52,13 +56,15 @@ func DownscaleSchedule(instance ec2.Instance) {
 					fmt.Println("Erreur :", err)
 				}
 				if isInSchedule {
-					fmt.Printf("Instance %s is scheduled to stop on %v from %s to %s\n", instance.ID, schedule.Days, schedule.Start, schedule.End)
-					ec2.StopInstance(instance.ID, instance.Region)
+					logger.Info("Instance scheduled to stop", "instance", instance.ID, "schedule", schedule)
+					if os.Getenv("DRY_RUN") == "false" {
+						ec2.StopInstance(instance.ID, instance.Region)
+					}
 				}
 			}
 		}
 
-		if tag.Key == "cloudoff:upscale" {
+		if tag.Key == "cloudoff:uptime" {
 			schedules, err := ParseSchedule(tag.Value)
 			if err != nil {
 				fmt.Printf("Error parsing schedule for instance %s: %v\n", instance.ID, err)
@@ -87,8 +93,10 @@ func DownscaleSchedule(instance ec2.Instance) {
 			}
 
 			if !uptime {
-				fmt.Printf("Instance %s is scheduled to stop is not in upscale period %s\n", instance.ID, schedules)
-				ec2.StopInstance(instance.ID, instance.Region)
+				logger.Info("Instance scheduled to stop", "instance", instance.ID, "schedule", schedules)
+				if os.Getenv("DRY_RUN") == "false" {
+					ec2.StopInstance(instance.ID, instance.Region)
+				}
 			}
 
 		}
@@ -99,7 +107,7 @@ func DownscaleSchedule(instance ec2.Instance) {
 func UpscaleSchedule(instance ec2.Instance) {
 
 	for _, tag := range instance.Tags {
-		if tag.Key == "cloudoff:upscale" {
+		if tag.Key == "cloudoff:uptime" {
 			schedules, err := ParseSchedule(tag.Value)
 			if err != nil {
 				fmt.Printf("Error parsing schedule for instance %s: %v\n", instance.ID, err)
@@ -117,13 +125,15 @@ func UpscaleSchedule(instance ec2.Instance) {
 					fmt.Println("Erreur :", err)
 				}
 				if isInSchedule {
-					fmt.Printf("Instance %s is scheduled to start on %v from %s to %s\n", instance.ID, schedule.Days, schedule.Start, schedule.End)
-					ec2.StartInstance(instance.ID, instance.Region)
+					logger.Info("Instance scheduled to start", "instance", instance.ID, "schedule", schedule)
+					if os.Getenv("DRY_RUN") == "false" {
+						ec2.StartInstance(instance.ID, instance.Region)
+					}
 				}
 			}
 		}
 
-		if tag.Key == "cloudoff:downscale" {
+		if tag.Key == "cloudoff:downtime" {
 			schedules, err := ParseSchedule(tag.Value)
 			if err != nil {
 				fmt.Printf("Error parsing schedule for instance %s: %v\n", instance.ID, err)
@@ -152,8 +162,10 @@ func UpscaleSchedule(instance ec2.Instance) {
 			}
 
 			if !uptime {
-				fmt.Printf("Instance %s is scheduled to start is not in downscale period %s\n", instance.ID, schedules)
-				ec2.StartInstance(instance.ID, instance.Region)
+				logger.Info("Instance scheduled to start", "instance", instance.ID, "schedule", schedules)
+				if os.Getenv("DRY_RUN") == "false" {
+					ec2.StartInstance(instance.ID, instance.Region)
+				}
 			}
 
 		}
@@ -286,4 +298,9 @@ func IsTimeInSchedule(currentTime time.Time, schedule Schedule) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func init() {
+	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
 }
