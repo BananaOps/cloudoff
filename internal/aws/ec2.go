@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -24,6 +25,7 @@ type Instance struct {
 	InstanceId       string
 	Region           string
 	State            string
+	LaunchTime       time.Time
 	Tags             []Tag
 }
 
@@ -84,6 +86,7 @@ func DiscoverEC2Instances() []Instance {
 				Region:           svc.Options().Region,
 				State:            string(instance.State.Name),
 				Tags:             ConvertToCustomTag(instance.Tags),
+				LaunchTime:       *instance.LaunchTime,
 			})
 		}
 	}
@@ -152,5 +155,30 @@ func StartInstance(instanceID, region string) error {
 	}
 
 	fmt.Printf("Instance %s démarré avec succès.\n", instanceID)
+	return nil
+}
+
+func TerminateInstance(instanceID, region string) error {
+	// Charger la configuration AWS
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+	if err != nil {
+		return fmt.Errorf("erreur lors du chargement de la configuration AWS : %v", err)
+	}
+
+	// Créer un client EC2
+	ec2Client := ec2.NewFromConfig(cfg)
+
+	// Préparer l'entrée pour StopInstances
+	input := &ec2.TerminateInstancesInput{
+		InstanceIds: []string{instanceID},
+	}
+
+	// Appeler StopInstances
+	_, err = ec2Client.TerminateInstances(context.TODO(), input)
+	if err != nil {
+		return fmt.Errorf("erreur lors de la suppression de l'instance %s : %v", instanceID, err)
+	}
+
+	fmt.Printf("Instance %s supprimée avec succès.\n", instanceID)
 	return nil
 }
