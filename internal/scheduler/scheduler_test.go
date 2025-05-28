@@ -13,13 +13,13 @@ func TestParseSchedule(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:  "Single day with time range",
-			input: "Sun 00:00-23:59",
+			name:  "Range of days with time range",
+			input: "Mon-Fri_09:00-17:00",
 			expected: []Schedule{
 				{
-					Days:  []string{"Sun"},
-					Start: "00:00",
-					End:   "23:59",
+					Days:  []string{"Mon", "Tue", "Wed", "Thu", "Fri"},
+					Start: "09:00",
+					End:   "17:00",
 				},
 			},
 			wantErr: false,

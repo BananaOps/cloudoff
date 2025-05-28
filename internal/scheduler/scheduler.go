@@ -180,8 +180,9 @@ func ParseSchedule(input string) ([]Schedule, error) {
 	// Séparer les plages horaires par des virgules
 	entries := strings.Split(input, ",")
 	for _, entry := range entries {
+		normalizedInput := strings.ReplaceAll(entry, "_", " ")
 		// Séparer les jours et les heures (ex. : "Mon-Fri 09:00-17:00")
-		parts := strings.Fields(entry)
+		parts := strings.Fields(normalizedInput)
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("format invalide pour l'entrée : %s", entry)
 		}
