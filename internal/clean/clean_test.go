@@ -3,6 +3,8 @@ package clean
 import (
 	"testing"
 	"time"
+
+	ec2 "github.com/bananaops/cloudoff/internal/aws"
 )
 
 func TestParseDuration(t *testing.T) {
@@ -36,6 +38,69 @@ func TestParseDuration(t *testing.T) {
 				if result != test.expected {
 					t.Errorf("for input '%s', expected %v, but got %v", test.input, test.expected, result)
 				}
+			}
+		})
+	}
+}
+
+func TestDurationExceeded(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		instance ec2.Instance
+		expected bool
+	}{
+		{
+			name: "TTL tag with infinity value",
+			instance: ec2.Instance{
+				Tags: []ec2.Tag{
+					{Key: "cloudoff:ttl", Value: "infinity"},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "TTL tag with valid duration",
+			instance: ec2.Instance{
+				Tags: []ec2.Tag{
+					{Key: "cloudoff:ttl", Value: "2h"},
+				},
+				LaunchTime: time.Now().Add(-3 * time.Hour),
+			},
+			expected: true,
+		},
+		{
+			name: "TTL tag with invalid duration",
+			instance: ec2.Instance{
+				Tags: []ec2.Tag{
+					{Key: "cloudoff:ttl", Value: "invalid"},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "Infinity tag",
+			instance: ec2.Instance{
+				Tags: []ec2.Tag{
+					{Key: "cloudoff:ttl", Value: "infinity"},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "No TTL tag",
+			instance: ec2.Instance{
+				Tags: []ec2.Tag{},
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := DurationExceeded(tt.instance)
+			if result != tt.expected {
+				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
 		})
 	}
