@@ -8,6 +8,7 @@ import (
 	"time"
 
 	ec2 "github.com/bananaops/cloudoff/internal/aws"
+	"github.com/bananaops/cloudoff/internal/clean"
 )
 
 var logger *slog.Logger
@@ -106,71 +107,72 @@ func DownscaleSchedule(instance ec2.Instance) {
 
 func UpscaleSchedule(instance ec2.Instance) {
 
-	for _, tag := range instance.Tags {
-		if tag.Key == "cloudoff:uptime" {
-			schedules, err := ParseSchedule(tag.Value)
-			if err != nil {
-				fmt.Printf("Error parsing schedule for instance %s: %v\n", instance.ID, err)
-				continue
+	if !clean.DurationExceeded(instance) {
+
+		for _, tag := range instance.Tags {
+			if tag.Key == "cloudoff:uptime" {
+				schedules, err := ParseSchedule(tag.Value)
+				if err != nil {
+					fmt.Printf("Error parsing schedule for instance %s: %v\n", instance.ID, err)
+					continue
+				}
+
+				// Heure actuelle
+				currentTime := time.Now()
+
+				for _, schedule := range schedules {
+
+					// Vérifier si l'heure actuelle et le jour sont dans l'horaire
+					isInSchedule, err := IsTimeInSchedule(currentTime, schedule)
+					if err != nil {
+						fmt.Println("Erreur :", err)
+					}
+					if isInSchedule {
+						logger.Info("Instance scheduled to start", "instance", instance.ID, "schedule", schedule)
+						if os.Getenv("DRY_RUN") == "false" {
+							ec2.StartInstance(instance.ID, instance.Region)
+						}
+					}
+				}
 			}
 
-			// Heure actuelle
-			currentTime := time.Now()
-
-			for _, schedule := range schedules {
-
-				// Vérifier si l'heure actuelle et le jour sont dans l'horaire
-				isInSchedule, err := IsTimeInSchedule(currentTime, schedule)
+			if tag.Key == "cloudoff:downtime" {
+				schedules, err := ParseSchedule(tag.Value)
 				if err != nil {
-					fmt.Println("Erreur :", err)
+					fmt.Printf("Error parsing schedule for instance %s: %v\n", instance.ID, err)
+					continue
 				}
-				if isInSchedule {
-					logger.Info("Instance scheduled to start", "instance", instance.ID, "schedule", schedule)
+
+				// Heure actuelle
+				currentTime := time.Now()
+
+				var uptime bool = false
+
+				for _, schedule := range schedules {
+
+					// Vérifier si l'heure actuelle et le jour sont dans l'horaire
+					isInSchedule, err := IsTimeInSchedule(currentTime, schedule)
+
+					if err != nil {
+						fmt.Println("Erreur :", err)
+					}
+					if isInSchedule {
+						uptime = true
+						break
+
+					}
+
+				}
+
+				if !uptime {
+					logger.Info("Instance scheduled to start", "instance", instance.ID, "schedule", schedules)
 					if os.Getenv("DRY_RUN") == "false" {
 						ec2.StartInstance(instance.ID, instance.Region)
 					}
 				}
 			}
 		}
-
-		if tag.Key == "cloudoff:downtime" {
-			schedules, err := ParseSchedule(tag.Value)
-			if err != nil {
-				fmt.Printf("Error parsing schedule for instance %s: %v\n", instance.ID, err)
-				continue
-			}
-
-			// Heure actuelle
-			currentTime := time.Now()
-
-			var uptime bool = false
-
-			for _, schedule := range schedules {
-
-				// Vérifier si l'heure actuelle et le jour sont dans l'horaire
-				isInSchedule, err := IsTimeInSchedule(currentTime, schedule)
-
-				if err != nil {
-					fmt.Println("Erreur :", err)
-				}
-				if isInSchedule {
-					uptime = true
-					break
-
-				}
-
-			}
-
-			if !uptime {
-				logger.Info("Instance scheduled to start", "instance", instance.ID, "schedule", schedules)
-				if os.Getenv("DRY_RUN") == "false" {
-					ec2.StartInstance(instance.ID, instance.Region)
-				}
-			}
-
-		}
 	}
-
 }
 
 // ParseSchedule analyse une chaîne contenant plusieurs plages horaires

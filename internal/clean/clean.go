@@ -37,6 +37,27 @@ func CleanEC2Instance() {
 	}
 }
 
+
+// Duration Exceeded Function
+func DurationExceeded(instance ec2.Instance) bool {
+	// Check if the instance has a "cloudoff:ttl" tag
+	for _, tag := range instance.Tags {
+		if tag.Key == "cloudoff:ttl" {
+			// Parse the duration from the tag value
+			duration, err := parseDuration(tag.Value)
+			if err != nil {
+				// Handle error (e.g., log it)
+				return false
+			}
+
+			// Check if the instance's launch time exceeds the specified duration
+			return isDurationExceeded(instance.LaunchTime, duration)
+		}
+	}
+	return false
+}
+
+
 // isDurationExceeded checks if the duration between a given time and the current time exceeds a specified duration.
 func isDurationExceeded(t time.Time, d time.Duration) bool {
 	// Calculate the elapsed time between the given time and now
