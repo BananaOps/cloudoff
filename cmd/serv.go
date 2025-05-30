@@ -24,6 +24,8 @@ var serv = &cobra.Command{
 	Short: "Run cloudoff server",
 	Run: func(cmd *cobra.Command, args []string) {
 
+		log.Println("DRYRUN:",os.Getenv("DRYRUN"))
+
 		//define logger for http server error
 		handler := slog.NewJSONHandler(os.Stdout, nil)
 		httplogger := slog.NewLogLogger(handler, slog.LevelError)

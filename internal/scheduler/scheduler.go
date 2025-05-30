@@ -42,7 +42,7 @@ func DownscaleSchedule(instance ec2.Instance) {
 		if tag.Key == "cloudoff:downtime" {
 			schedules, err := ParseSchedule(tag.Value)
 			if err != nil {
-				fmt.Printf("Error parsing schedule for instance %s: %v\n", instance.ID, err)
+				logger.Error("error parsing schedule for instance", "instance", instance.ID, "error", err)
 				continue
 			}
 
@@ -58,7 +58,7 @@ func DownscaleSchedule(instance ec2.Instance) {
 				}
 				if isInSchedule {
 					logger.Info("Instance scheduled to stop", "instance", instance.ID, "schedule", schedule)
-					if os.Getenv("DRY_RUN") == "false" {
+					if os.Getenv("DRYRUN") != "true" {
 						ec2.StopInstance(instance.ID, instance.Region)
 					}
 				}
@@ -95,7 +95,7 @@ func DownscaleSchedule(instance ec2.Instance) {
 
 			if !uptime {
 				logger.Info("Instance scheduled to stop", "instance", instance.ID, "schedule", schedules)
-				if os.Getenv("DRY_RUN") == "false" {
+				if os.Getenv("DRYRUN") != "true" {
 					ec2.StopInstance(instance.ID, instance.Region)
 				}
 			}
@@ -129,7 +129,7 @@ func UpscaleSchedule(instance ec2.Instance) {
 					}
 					if isInSchedule {
 						logger.Info("Instance scheduled to start", "instance", instance.ID, "schedule", schedule)
-						if os.Getenv("DRY_RUN") == "false" {
+						if os.Getenv("DRYRUN") != "true" {
 							ec2.StartInstance(instance.ID, instance.Region)
 						}
 					}
@@ -166,7 +166,7 @@ func UpscaleSchedule(instance ec2.Instance) {
 
 				if !uptime {
 					logger.Info("Instance scheduled to start", "instance", instance.ID, "schedule", schedules)
-					if os.Getenv("DRY_RUN") == "false" {
+					if os.Getenv("DRYRUN") != "true" {
 						ec2.StartInstance(instance.ID, instance.Region)
 					}
 				}

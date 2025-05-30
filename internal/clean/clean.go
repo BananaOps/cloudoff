@@ -43,6 +43,8 @@ func DurationExceeded(instance ec2.Instance) bool {
 	// Check if the instance has a "cloudoff:ttl" tag
 	for _, tag := range instance.Tags {
 		if tag.Key == "cloudoff:ttl" {
+
+			
 			// Parse the duration from the tag value
 			duration, err := parseDuration(tag.Value)
 			if err != nil {

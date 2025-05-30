@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -11,6 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
+
+var logger *slog.Logger
 
 type Tag struct {
 	Key   string
@@ -58,7 +62,7 @@ func DiscoverEC2Instances() []Instance {
 
 	var listInstances []Instance
 
-	// for each instance in the result, get the name and the private ip address
+	// For each instance in the result, get the name and the private IP address
 	for _, reservation := range result.Reservations {
 		for _, instance := range reservation.Instances {
 
@@ -94,7 +98,7 @@ func DiscoverEC2Instances() []Instance {
 	return listInstances
 }
 
-// Fonction pour convertir une InstanceTag en CustomTag
+// Function to convert InstanceTag to CustomTag
 func ConvertToCustomTag(instanceTag []types.Tag) []Tag {
 
 	var customTags []Tag
@@ -109,76 +113,82 @@ func ConvertToCustomTag(instanceTag []types.Tag) []Tag {
 }
 
 func StopInstance(instanceID, region string) error {
-	// Charger la configuration AWS
+	// Load AWS configuration
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
-		return fmt.Errorf("erreur lors du chargement de la configuration AWS : %v", err)
+		return fmt.Errorf("error loading AWS configuration: %v", err)
 	}
 
-	// Créer un client EC2
+	// Create an EC2 client
 	ec2Client := ec2.NewFromConfig(cfg)
 
-	// Préparer l'entrée pour StopInstances
+	// Prepare input for StopInstances
 	input := &ec2.StopInstancesInput{
 		InstanceIds: []string{instanceID},
 	}
 
-	// Appeler StopInstances
+	// Call StopInstances
 	_, err = ec2Client.StopInstances(context.TODO(), input)
 	if err != nil {
-		return fmt.Errorf("erreur lors de l'arrêt de l'instance %s : %v", instanceID, err)
+		return fmt.Errorf("error stopping instance %s: %v", instanceID, err)
 	}
 
-	fmt.Printf("Instance %s arrêtée avec succès.\n", instanceID)
+	logger.Info("instance stopped successfully", "instance", instanceID)
 	return nil
 }
 
 func StartInstance(instanceID, region string) error {
-	// Charger la configuration AWS
+	// Load AWS configuration
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
-		return fmt.Errorf("erreur lors du chargement de la configuration AWS : %v", err)
+		return fmt.Errorf("error loading AWS configuration: %v", err)
 	}
 
-	// Créer un client EC2
+	// Create an EC2 client
 	ec2Client := ec2.NewFromConfig(cfg)
 
-	// Préparer l'entrée pour StopInstances
+	// Prepare input for StartInstances
 	input := &ec2.StartInstancesInput{
 		InstanceIds: []string{instanceID},
 	}
 
-	// Appeler StopInstances
+	// Call StartInstances
 	_, err = ec2Client.StartInstances(context.TODO(), input)
 	if err != nil {
-		return fmt.Errorf("erreur lors du démarrage de l'instance %s : %v", instanceID, err)
+		return fmt.Errorf("error starting instance %s: %v", instanceID, err)
 	}
 
-	fmt.Printf("Instance %s démarré avec succès.\n", instanceID)
+
+	logger.Info("instance started successfully", "instance", instanceID)
 	return nil
 }
 
 func TerminateInstance(instanceID, region string) error {
-	// Charger la configuration AWS
+	// Load AWS configuration
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
-		return fmt.Errorf("erreur lors du chargement de la configuration AWS : %v", err)
+		return fmt.Errorf("error loading AWS configuration: %v", err)
 	}
 
-	// Créer un client EC2
+	// Create an EC2 client
 	ec2Client := ec2.NewFromConfig(cfg)
 
-	// Préparer l'entrée pour StopInstances
+	// Prepare input for TerminateInstances
 	input := &ec2.TerminateInstancesInput{
 		InstanceIds: []string{instanceID},
 	}
 
-	// Appeler StopInstances
+	// Call TerminateInstances
 	_, err = ec2Client.TerminateInstances(context.TODO(), input)
 	if err != nil {
-		return fmt.Errorf("erreur lors de la suppression de l'instance %s : %v", instanceID, err)
+		return fmt.Errorf("error terminating instance %s: %v", instanceID, err)
 	}
 
-	fmt.Printf("Instance %s supprimée avec succès.\n", instanceID)
+	logger.Info("instance terminated successfully", "instance", instanceID)
 	return nil
+}
+
+func init() {
+	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
 }
