@@ -2,7 +2,10 @@ module github.com/bananaops/cloudoff
 
 go 1.24.1
 
-require github.com/spf13/cobra v1.9.1
+require (
+	github.com/robfig/cron/v3 v3.0.1
+	github.com/spf13/cobra v1.9.1
+)
 
 require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.67 // indirect
@@ -22,7 +25,6 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/robfig/cron/v3 v3.0.1 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
 )
@@ -30,7 +32,7 @@ require (
 require (
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.218.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.224.0
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/prometheus/client_golang v1.22.0
 	github.com/spf13/pflag v1.0.6 // indirect
