@@ -15,9 +15,10 @@ var logger *slog.Logger
 
 // Structure pour représenter les jours et les heures
 type Schedule struct {
-	Days  []string
-	Start string
-	End   string
+	Days     []string
+	Start    string
+	End      string
+	Timezone string
 }
 
 func ScheduleEC2Instance() {
@@ -183,15 +184,22 @@ func ParseSchedule(input string) ([]Schedule, error) {
 	entries := strings.Split(input, ",")
 	for _, entry := range entries {
 		normalizedInput := strings.ReplaceAll(entry, "_", " ")
-		// Séparer les jours et les heures (ex. : "Mon-Fri 09:00-17:00")
+		// Séparer les jours, les heures et le fuseau horaire (ex. : "Mon-Fri 09:00-17:00 Europe/Paris")
 		parts := strings.Fields(normalizedInput)
-		if len(parts) != 2 {
+		if len(parts) < 2 {
 			return nil, fmt.Errorf("format invalide pour l'entrée : %s", entry)
 		}
 
-		// Extraire les jours et les heures
+		// Extraire les jours, les heures et le fuseau horaire
 		daysPart := parts[0]
 		timePart := parts[1]
+
+		var timezone string
+		if len(parts) > 2 {
+			timezone = parts[2]
+		} else {
+			timezone = "UTC"
+		}
 
 		// Gérer les plages de jours (ex. : "Mon-Fri")
 		days, err := parseDays(daysPart)
@@ -209,9 +217,10 @@ func ParseSchedule(input string) ([]Schedule, error) {
 
 		// Ajouter la plage horaire à la liste
 		schedules = append(schedules, Schedule{
-			Days:  days,
-			Start: startTime,
-			End:   endTime,
+			Days:     days,
+			Start:    startTime,
+			End:      endTime,
+			Timezone: timezone,
 		})
 	}
 
