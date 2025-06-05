@@ -275,6 +275,13 @@ func parseDays(daysPart string) ([]string, error) {
 
 // Fonction pour vérifier si une heure et un jour sont dans un horaire
 func IsTimeInSchedule(currentTime time.Time, schedule Schedule) (bool, error) {
+	// Appliquer le fuseau horaire
+	location, err := time.LoadLocation(schedule.Timezone)
+	if err != nil {
+		return false, fmt.Errorf("fuseau horaire invalide : %v", err)
+	}
+	currentTime = currentTime.In(location)
+
 	// Vérifier si le jour actuel est dans la liste des jours
 	currentDay := currentTime.Weekday().String()[:3] // Récupère les 3 premières lettres du jour (ex : "Mon")
 	isDayValid := false
@@ -290,19 +297,19 @@ func IsTimeInSchedule(currentTime time.Time, schedule Schedule) (bool, error) {
 	}
 
 	// Parse l'heure de début
-	startTime, err := time.Parse("15:04", schedule.Start)
+	startTime, err := time.ParseInLocation("15:04", schedule.Start, location)
 	if err != nil {
 		return false, fmt.Errorf("heure de début invalide : %v", err)
 	}
 
 	// Parse l'heure de fin
-	endTime, err := time.Parse("15:04", schedule.End)
+	endTime, err := time.ParseInLocation("15:04", schedule.End, location)
 	if err != nil {
 		return false, fmt.Errorf("heure de fin invalide : %v", err)
 	}
 
 	// Extraire uniquement l'heure et les minutes de l'heure actuelle
-	current := time.Date(0, 1, 1, currentTime.Hour(), currentTime.Minute(), 0, 0, time.UTC)
+	current := time.Date(0, 1, 1, currentTime.Hour(), currentTime.Minute(), 0, 0, location)
 
 	// Vérifier si l'heure actuelle est dans la période
 	if current.Equal(startTime) || current.Equal(endTime) || (current.After(startTime) && current.Before(endTime)) {
