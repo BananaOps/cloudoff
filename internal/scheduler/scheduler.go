@@ -58,9 +58,14 @@ func DownscaleSchedule(instance ec2.Instance) {
 					fmt.Println("Erreur :", err)
 				}
 				if isInSchedule {
-					logger.Info("Instance scheduled to stop", "instance", instance.ID, "schedule", schedule)
+					logger.Info("instance scheduled to stop", "instance", instance.ID, "schedule", schedule)
 					if os.Getenv("DRYRUN") != "true" {
-						ec2.StopInstance(instance.ID, instance.Region)
+						err := ec2.StopInstance(instance.ID, instance.Region)
+						if err != nil {
+							logger.Error("error stopping instance", "instance", instance.ID, "error", err)
+						} else {
+							logger.Info("instance stopped successfully", "instance", instance.ID)
+						}
 					}
 				}
 			}
@@ -76,7 +81,7 @@ func DownscaleSchedule(instance ec2.Instance) {
 			// Current time
 			currentTime := time.Now()
 
-			var uptime bool = false
+			var uptime = false
 
 			for _, schedule := range schedules {
 
@@ -95,9 +100,14 @@ func DownscaleSchedule(instance ec2.Instance) {
 			}
 
 			if !uptime {
-				logger.Info("Instance scheduled to stop", "instance", instance.ID, "schedule", schedules)
+				logger.Info("instance scheduled to stop", "instance", instance.ID, "schedule", schedules)
 				if os.Getenv("DRYRUN") != "true" {
-					ec2.StopInstance(instance.ID, instance.Region)
+					err := ec2.StopInstance(instance.ID, instance.Region)
+					if err != nil {
+						logger.Error("error stopping instance", "instance", instance.ID, "error", err)
+					} else {
+						logger.Info("instance stopped successfully", "instance", instance.ID)
+					}
 				}
 			}
 
@@ -114,7 +124,7 @@ func UpscaleSchedule(instance ec2.Instance) {
 			if tag.Key == "cloudoff:uptime" {
 				schedules, err := ParseSchedule(tag.Value)
 				if err != nil {
-					fmt.Printf("Error parsing schedule for instance %s: %v\n", instance.ID, err)
+					logger.Error("error parsing schedule for instance", "instance", instance.ID, "error", err)
 					continue
 				}
 
@@ -126,12 +136,17 @@ func UpscaleSchedule(instance ec2.Instance) {
 					// Checker if the current time and day are in the schedule
 					isInSchedule, err := IsTimeInSchedule(currentTime, schedule)
 					if err != nil {
-						fmt.Println("Erreur :", err)
+						logger.Error("error checking schedule for instance", "instance", instance.ID, "error", err)
 					}
 					if isInSchedule {
-						logger.Info("Instance scheduled to start", "instance", instance.ID, "schedule", schedule)
+						logger.Info("instance scheduled to start", "instance", instance.ID, "schedule", schedule)
 						if os.Getenv("DRYRUN") != "true" {
-							ec2.StartInstance(instance.ID, instance.Region)
+							err:= ec2.StartInstance(instance.ID, instance.Region)
+							if err != nil {
+								logger.Error("error starting instance", "instance", instance.ID, "error", err)
+							} else {
+								logger.Info("instance started successfully", "instance", instance.ID)
+							}
 						}
 					}
 				}
@@ -140,22 +155,21 @@ func UpscaleSchedule(instance ec2.Instance) {
 			if tag.Key == "cloudoff:downtime" {
 				schedules, err := ParseSchedule(tag.Value)
 				if err != nil {
-					fmt.Printf("Error parsing schedule for instance %s: %v\n", instance.ID, err)
+					logger.Error("error parsing schedule for instance", "instance", instance.ID, "error", err)
 					continue
 				}
 
 				// Current time
 				currentTime := time.Now()
 
-				var uptime bool = false
+				var uptime = false
 
 				for _, schedule := range schedules {
 
 					// Check if the current time and day are in the schedule
 					isInSchedule, err := IsTimeInSchedule(currentTime, schedule)
-
 					if err != nil {
-						fmt.Println("Erreur :", err)
+						logger.Error("error checking schedule for instance", "instance", instance.ID, "error", err)
 					}
 					if isInSchedule {
 						uptime = true
@@ -168,7 +182,12 @@ func UpscaleSchedule(instance ec2.Instance) {
 				if !uptime {
 					logger.Info("Instance scheduled to start", "instance", instance.ID, "schedule", schedules)
 					if os.Getenv("DRYRUN") != "true" {
-						ec2.StartInstance(instance.ID, instance.Region)
+						err := ec2.StartInstance(instance.ID, instance.Region)
+						if err != nil {
+							logger.Error("error starting instance", "instance", instance.ID, "error", err)
+						} else {
+							logger.Info("instance started successfully", "instance", instance.ID)
+						}
 					}
 				}
 			}

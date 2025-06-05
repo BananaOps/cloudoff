@@ -75,7 +75,7 @@ func DiscoverEC2Instances() []Instance {
 				}
 			}
 
-			var spot bool = false
+			var spot = false
 
 			if instance.InstanceLifecycle == "spot" {
 				spot = true
