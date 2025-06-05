@@ -141,7 +141,7 @@ func UpscaleSchedule(instance ec2.Instance) {
 					if isInSchedule {
 						logger.Info("instance scheduled to start", "instance", instance.ID, "schedule", schedule)
 						if os.Getenv("DRYRUN") != "true" {
-							err:= ec2.StartInstance(instance.ID, instance.Region)
+							err := ec2.StartInstance(instance.ID, instance.Region)
 							if err != nil {
 								logger.Error("error starting instance", "instance", instance.ID, "error", err)
 							} else {
@@ -202,37 +202,51 @@ func ParseSchedule(input string) ([]Schedule, error) {
 	// Split the input by commas to handle multiple entries
 	entries := strings.Split(input, ",")
 	for _, entry := range entries {
-		normalizedInput := strings.ReplaceAll(entry, "_", " ")
-		// Split the entry into parts
-		parts := strings.Fields(normalizedInput)
-		if len(parts) < 2 {
-			return nil, fmt.Errorf("invalid format for input : %s", entry)
-		}
-
-		// Extract days, time range, and timezone
-		daysPart := parts[0]
-		timePart := parts[1]
 
 		var timezone string
-		if len(parts) > 2 {
-			timezone = parts[2]
+		var days []string
+		var startTime, endTime string
+		var err error
+
+		if entry != "infinity" {
+
+			normalizedInput := strings.ReplaceAll(entry, "_", " ")
+			// Split the entry into parts
+			parts := strings.Fields(normalizedInput)
+			if len(parts) < 2 {
+				return nil, fmt.Errorf("invalid format for input : %s", entry)
+			}
+
+			// Extract days, time range, and timezone
+			daysPart := parts[0]
+			timePart := parts[1]
+
+			if len(parts) > 2 {
+				timezone = parts[2]
+			} else {
+				timezone = "UTC"
+			}
+
+			// Generate a list of days from the days part
+			days, err = parseDays(daysPart)
+			if err != nil {
+				return nil, err
+			}
+
+			// Generate hour range from the time part (ex. : "09:00-17:00")
+			timeRange := strings.Split(timePart, "-")
+			if len(timeRange) != 2 {
+				return nil, fmt.Errorf("invalid format for hours : %s", timePart)
+			}
+			startTime = timeRange[0]
+			endTime = timeRange[1]
 		} else {
-			timezone = "UTC"
+			// If the entry is "infinity", we set default values
+			days = []string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"} // All days of the week
+			startTime = "00:00" // Start at midnight
+			endTime = "23:59"   // End at the end of the day
+			timezone = "UTC"    // Default timezone
 		}
-
-		// Generate a list of days from the days part
-		days, err := parseDays(daysPart)
-		if err != nil {
-			return nil, err
-		}
-
-		// Generate hour range from the time part (ex. : "09:00-17:00")
-		timeRange := strings.Split(timePart, "-")
-		if len(timeRange) != 2 {
-			return nil, fmt.Errorf("invalid format for hours : %s", timePart)
-		}
-		startTime := timeRange[0]
-		endTime := timeRange[1]
 
 		// Add the schedule to the list
 		schedules = append(schedules, Schedule{

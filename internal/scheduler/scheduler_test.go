@@ -91,6 +91,19 @@ func TestParseSchedule(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:  "Infinity schedule",
+			input: "infinity",
+			expected: []Schedule{
+				{
+					Days:     []string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"},
+					Start:    "00:00",
+					End:      "23:59",
+					Timezone: "UTC",
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name:     "Invalid format (missing time range)",
 			input:    "Mon-Fri",
 			expected: nil,
@@ -186,34 +199,40 @@ func TestIsTimeInSchedule(t *testing.T) {
 			expected:    true,
 			wantErr:     false,
 		},
-        {
-            name:        "Within schedule time in UTC",
-            currentTime: time.Date(2023, 10, 2, 10, 0, 0, 0, time.UTC), // Mon 10:00 UTC
-            schedule:    Schedule{Days: []string{"Mon"}, Start: "09:00", End: "17:00", Timezone: "UTC"},
-            expected:    true,
-            wantErr:     false,
-        },
-        {
-            name:        "Outside schedule time in UTC",
-            currentTime: time.Date(2023, 10, 2, 18, 0, 0, 0, time.UTC), // Mon 18:00 UTC
-            schedule:    Schedule{Days: []string{"Mon"}, Start: "09:00", End: "17:00", Timezone: "UTC"},
-            expected:    false,
-            wantErr:     false,
-        },
-        {
-            name:        "Within schedule time in Europe/Paris timezone",
-            currentTime: time.Date(2023, 10, 2, 10, 0, 0, 0, time.UTC), // Mon 10:00 UTC
-            schedule:    Schedule{Days: []string{"Mon"}, Start: "09:00", End: "17:00", Timezone: "Europe/Paris"},
-            expected:    true,
-            wantErr:     false,
-        },
-        {
-            name:        "Outside schedule time in Europe/Paris timezone",
-            currentTime: time.Date(2023, 10, 2, 18, 0, 0, 0, time.UTC), // Mon 18:00 UTC
-            schedule:    Schedule{Days: []string{"Mon"}, Start: "09:00", End: "17:00", Timezone: "Europe/Paris"},
-            expected:    false,
-            wantErr:     false,
-        },
+		{
+			name:        "Within schedule time in UTC",
+			currentTime: time.Date(2023, 10, 2, 10, 0, 0, 0, time.UTC), // Mon 10:00 UTC
+			schedule:    Schedule{Days: []string{"Mon"}, Start: "09:00", End: "17:00", Timezone: "UTC"},
+			expected:    true,
+			wantErr:     false,
+		},
+		{
+			name:        "Outside schedule time in UTC",
+			currentTime: time.Date(2023, 10, 2, 18, 0, 0, 0, time.UTC), // Mon 18:00 UTC
+			schedule:    Schedule{Days: []string{"Mon"}, Start: "09:00", End: "17:00", Timezone: "UTC"},
+			expected:    false,
+			wantErr:     false,
+		},
+		{
+			name:        "Within schedule time in Europe/Paris timezone",
+			currentTime: time.Date(2023, 10, 2, 10, 0, 0, 0, time.UTC), // Mon 10:00 UTC
+			schedule:    Schedule{Days: []string{"Mon"}, Start: "09:00", End: "17:00", Timezone: "Europe/Paris"},
+			expected:    true,
+			wantErr:     false,
+		},
+		{
+			name:        "Outside schedule time in Europe/Paris timezone",
+			currentTime: time.Date(2023, 10, 2, 18, 0, 0, 0, time.UTC), // Mon 18:00 UTC
+			schedule:    Schedule{Days: []string{"Mon"}, Start: "09:00", End: "17:00", Timezone: "Europe/Paris"},
+			expected:    false,
+			wantErr:     false,
+		},
+		{name: "Schedule with infinity",
+			currentTime: time.Date(2023, 10, 2, 10, 0, 0, 0, time.UTC), // Mon 10:00
+			schedule:    Schedule{Days: []string{"Mon"}, Start: "00:00", End: "23:59", Timezone: "UTC"},
+			expected:    true,
+			wantErr:     false,
+		},
 	}
 
 	for _, tt := range tests {
