@@ -1,0 +1,73 @@
+# Default values for cloudoff.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: bananaops/cloudoff
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  # fsGroup: 2000
+
+securityContext:
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+env:
+  # - name: DRYRUN
+  #   value: "true"
+
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 128Mi
+  requests:
+    cpu: 250m
+    memory: 128Mi
+
+
+# Configure Prometheus service scrapping with
+prometheus:
+  monitor:
+    enabled: false
+    additionalLabels: {}
+    relabelings: []
+    scrapeTimeout: 10s
+
+# Configure VictoiraMetrics service scrapping with
+victoriametrics:
+  monitor: 
+    enabled: false
+    additionalLabels: {}
+    relabelings: []
+    scrapeTimeout: 10s
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
