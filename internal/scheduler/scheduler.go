@@ -13,7 +13,7 @@ import (
 
 var logger *slog.Logger
 
-// Structure pour représenter les jours et les heures
+// Structure for scheduling information
 type Schedule struct {
 	Days     []string
 	Start    string
@@ -47,12 +47,12 @@ func DownscaleSchedule(instance ec2.Instance) {
 				continue
 			}
 
-			// Heure actuelle
+			// Current time
 			currentTime := time.Now()
 
 			for _, schedule := range schedules {
 
-				// Vérifier si l'heure actuelle et le jour sont dans l'horaire
+				// Checker if the current time and day are in the schedule
 				isInSchedule, err := IsTimeInSchedule(currentTime, schedule)
 				if err != nil {
 					fmt.Println("Erreur :", err)
@@ -73,14 +73,14 @@ func DownscaleSchedule(instance ec2.Instance) {
 				continue
 			}
 
-			// Heure actuelle
+			// Current time
 			currentTime := time.Now()
 
 			var uptime bool = false
 
 			for _, schedule := range schedules {
 
-				// Vérifier si l'heure actuelle et le jour sont dans l'horaire
+				// Check if the current time and day are in the schedule
 				isInSchedule, err := IsTimeInSchedule(currentTime, schedule)
 
 				if err != nil {
@@ -118,12 +118,12 @@ func UpscaleSchedule(instance ec2.Instance) {
 					continue
 				}
 
-				// Heure actuelle
+				// Current time
 				currentTime := time.Now()
 
 				for _, schedule := range schedules {
 
-					// Vérifier si l'heure actuelle et le jour sont dans l'horaire
+					// Checker if the current time and day are in the schedule
 					isInSchedule, err := IsTimeInSchedule(currentTime, schedule)
 					if err != nil {
 						fmt.Println("Erreur :", err)
@@ -144,14 +144,14 @@ func UpscaleSchedule(instance ec2.Instance) {
 					continue
 				}
 
-				// Heure actuelle
+				// Current time
 				currentTime := time.Now()
 
 				var uptime bool = false
 
 				for _, schedule := range schedules {
 
-					// Vérifier si l'heure actuelle et le jour sont dans l'horaire
+					// Check if the current time and day are in the schedule
 					isInSchedule, err := IsTimeInSchedule(currentTime, schedule)
 
 					if err != nil {
@@ -176,21 +176,21 @@ func UpscaleSchedule(instance ec2.Instance) {
 	}
 }
 
-// ParseSchedule analyse une chaîne contenant plusieurs plages horaires
+// ParseSchedule convert string into a slice of Schedule structs
 func ParseSchedule(input string) ([]Schedule, error) {
 	var schedules []Schedule
 
-	// Séparer les plages horaires par des virgules
+	// Split the input by commas to handle multiple entries
 	entries := strings.Split(input, ",")
 	for _, entry := range entries {
 		normalizedInput := strings.ReplaceAll(entry, "_", " ")
-		// Séparer les jours, les heures et le fuseau horaire (ex. : "Mon-Fri 09:00-17:00 Europe/Paris")
+		// Split the entry into parts
 		parts := strings.Fields(normalizedInput)
 		if len(parts) < 2 {
-			return nil, fmt.Errorf("format invalide pour l'entrée : %s", entry)
+			return nil, fmt.Errorf("invalid format for input : %s", entry)
 		}
 
-		// Extraire les jours, les heures et le fuseau horaire
+		// Extract days, time range, and timezone
 		daysPart := parts[0]
 		timePart := parts[1]
 
@@ -201,21 +201,21 @@ func ParseSchedule(input string) ([]Schedule, error) {
 			timezone = "UTC"
 		}
 
-		// Gérer les plages de jours (ex. : "Mon-Fri")
+		// Generate a list of days from the days part
 		days, err := parseDays(daysPart)
 		if err != nil {
 			return nil, err
 		}
 
-		// Gérer les heures (ex. : "09:00-17:00")
+		// Generate hour range from the time part (ex. : "09:00-17:00")
 		timeRange := strings.Split(timePart, "-")
 		if len(timeRange) != 2 {
-			return nil, fmt.Errorf("format invalide pour les heures : %s", timePart)
+			return nil, fmt.Errorf("invalid format for hours : %s", timePart)
 		}
 		startTime := timeRange[0]
 		endTime := timeRange[1]
 
-		// Ajouter la plage horaire à la liste
+		// Add the schedule to the list
 		schedules = append(schedules, Schedule{
 			Days:     days,
 			Start:    startTime,
@@ -227,30 +227,30 @@ func ParseSchedule(input string) ([]Schedule, error) {
 	return schedules, nil
 }
 
-// parseDays analyse une chaîne de jours (ex. : "Mon-Fri" ou "Sun")
+// parseDays analyse a slice of days and returns a slice of valid day strings
 func parseDays(daysPart string) ([]string, error) {
 	var days []string
 	dayMap := map[string]int{
 		"Sun": 0, "Mon": 1, "Tue": 2, "Wed": 3, "Thu": 4, "Fri": 5, "Sat": 6,
 	}
 
-	// Gérer les plages de jours (ex. : "Mon-Fri")
+	// generate a list of days from the days part
 	if strings.Contains(daysPart, "-") {
 		rangeParts := strings.Split(daysPart, "-")
 		if len(rangeParts) != 2 {
-			return nil, fmt.Errorf("format invalide pour les jours : %s", daysPart)
+			return nil, fmt.Errorf("invalid format for days : %s", daysPart)
 		}
 		startDay := rangeParts[0]
 		endDay := rangeParts[1]
 
-		// Vérifier que les jours sont valides
+		// Check if startDay and endDay are valid days
 		startIndex, ok1 := dayMap[startDay]
 		endIndex, ok2 := dayMap[endDay]
 		if !ok1 || !ok2 {
-			return nil, fmt.Errorf("jour invalide dans la plage : %s", daysPart)
+			return nil, fmt.Errorf("invalid day in range : %s", daysPart)
 		}
 
-		// Ajouter tous les jours dans la plage
+		// Add days in the range
 		for i := startIndex; ; i = (i + 1) % 7 {
 			for day, index := range dayMap {
 				if index == i {
@@ -263,9 +263,9 @@ func parseDays(daysPart string) ([]string, error) {
 			}
 		}
 	} else {
-		// Gérer un seul jour (ex. : "Sun")
+		// Manage single days
 		if _, ok := dayMap[daysPart]; !ok {
-			return nil, fmt.Errorf("jour invalide : %s", daysPart)
+			return nil, fmt.Errorf("invalid day: %s", daysPart)
 		}
 		days = append(days, daysPart)
 	}
@@ -273,17 +273,17 @@ func parseDays(daysPart string) ([]string, error) {
 	return days, nil
 }
 
-// Fonction pour vérifier si une heure et un jour sont dans un horaire
+// Check if the current time is within the schedule
 func IsTimeInSchedule(currentTime time.Time, schedule Schedule) (bool, error) {
-	// Appliquer le fuseau horaire
+	// Aply the timezone to the current time
 	location, err := time.LoadLocation(schedule.Timezone)
 	if err != nil {
-		return false, fmt.Errorf("fuseau horaire invalide : %v", err)
+		return false, fmt.Errorf("invalid timezone : %v", err)
 	}
 	currentTime = currentTime.In(location)
 
-	// Vérifier si le jour actuel est dans la liste des jours
-	currentDay := currentTime.Weekday().String()[:3] // Récupère les 3 premières lettres du jour (ex : "Mon")
+	// Check if the current day is in the schedule
+	currentDay := currentTime.Weekday().String()[:3] // Get the first three letters of the weekday
 	isDayValid := false
 	for _, day := range schedule.Days {
 		if strings.EqualFold(day, currentDay) {
@@ -293,25 +293,25 @@ func IsTimeInSchedule(currentTime time.Time, schedule Schedule) (bool, error) {
 	}
 
 	if !isDayValid {
-		return false, nil // Le jour actuel n'est pas dans la liste
+		return false, nil // The current day is not in the schedule
 	}
 
-	// Parse l'heure de début
+	// Parse hour of start
 	startTime, err := time.ParseInLocation("15:04", schedule.Start, location)
 	if err != nil {
-		return false, fmt.Errorf("heure de début invalide : %v", err)
+		return false, fmt.Errorf("invalid start time : %v", err)
 	}
 
-	// Parse l'heure de fin
+	// Parse hour of end
 	endTime, err := time.ParseInLocation("15:04", schedule.End, location)
 	if err != nil {
-		return false, fmt.Errorf("heure de fin invalide : %v", err)
+		return false, fmt.Errorf("invalid end time: %v", err)
 	}
 
-	// Extraire uniquement l'heure et les minutes de l'heure actuelle
+	// Extract the current time without the date
 	current := time.Date(0, 1, 1, currentTime.Hour(), currentTime.Minute(), 0, 0, location)
 
-	// Vérifier si l'heure actuelle est dans la période
+	// Check if the current time is within the schedule
 	if current.Equal(startTime) || current.Equal(endTime) || (current.After(startTime) && current.Before(endTime)) {
 		return true, nil
 	}
