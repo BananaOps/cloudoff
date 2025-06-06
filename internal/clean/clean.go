@@ -2,13 +2,16 @@ package clean
 
 import (
 	"errors"
-	"fmt"
+	"log/slog"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	ec2 "github.com/bananaops/cloudoff/internal/aws"
 )
+
+var logger *slog.Logger
 
 // CleanEC2Instance cleans up EC2 instances based on the provided schedule.
 func CleanEC2Instance() {
@@ -17,32 +20,23 @@ func CleanEC2Instance() {
 	for _, instance := range ec2List {
 		for _, tag := range instance.Tags {
 			if tag.Key == "cloudoff:ttl" {
-				// Parse the duration from the tag value
-				duration, err := parseDuration(tag.Value)
-				if err != nil {
-					// Handle error (e.g., log it)
+				if DurationExceeded(instance) {
+					// Perform cleanup action (e.g., terminate the instance)
+					ec2.TerminateInstance(instance.InstanceId, instance.Region)
+					logger.Info("Instance terminated", "instance", instance.ID, "region", instance.Region, "AttachTime", instance.AttachTime, "ttl", tag.Value)
 					continue
 				}
 
-				// Check if the instance's launch time exceeds the specified duration
-				if isDurationExceeded(instance.LaunchTime, duration) {
-					// Perform cleanup action (e.g., terminate the instance)
-					// Example: ec2.TerminateInstance(instance.InstanceId)
-					fmt.Println("Instance scheduled for cleanup", "instance", instance.ID, "duration", duration)
-					continue
-				}
-			
 			}
 		}
 	}
 }
 
-
 // Duration Exceeded Function
 func DurationExceeded(instance ec2.Instance) bool {
 	// Check if the instance has a "cloudoff:ttl" tag
 	for _, tag := range instance.Tags {
-		
+
 		if tag.Key == "cloudoff:ttl" {
 			if tag.Value == "infinity" {
 				return false // If the tag value is "infinity", do not consider it for cleanup
@@ -60,7 +54,6 @@ func DurationExceeded(instance ec2.Instance) bool {
 	}
 	return false
 }
-
 
 // isDurationExceeded checks if the duration between a given time and the current time exceeds a specified duration.
 func isDurationExceeded(t time.Time, d time.Duration) bool {
@@ -103,4 +96,9 @@ func parseDuration(input string) (time.Duration, error) {
 	default:
 		return 0, errors.New("invalid unit: must be 'w', 'd', or 'h'")
 	}
+}
+
+func init() {
+	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
 }
