@@ -22,7 +22,12 @@ func CleanEC2Instance() {
 			if tag.Key == "cloudoff:ttl" {
 				if DurationExceeded(instance) {
 					// Perform cleanup action (e.g., terminate the instance)
-					ec2.TerminateInstance(instance.InstanceId, instance.Region)
+					err := ec2.TerminateInstance(instance.InstanceId, instance.Region)
+					if err != nil {
+						logger.Error("error terminating instance", "instance", instance.ID, "region", instance.Region, "error", err)
+						continue
+					}
+					// Log the termination action
 					logger.Info("Instance terminated", "instance", instance.ID, "region", instance.Region, "AttachTime", instance.AttachTime, "ttl", tag.Value)
 					continue
 				}
