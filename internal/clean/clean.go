@@ -49,7 +49,7 @@ func DurationExceeded(instance ec2.Instance) bool {
 			}
 
 			// Check if the instance's launch time exceeds the specified duration
-			return isDurationExceeded(instance.LaunchTime, duration)
+			return isDurationExceeded(instance.AttachTime, duration)
 		}
 	}
 	return false
