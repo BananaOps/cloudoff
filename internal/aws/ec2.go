@@ -30,6 +30,7 @@ type Instance struct {
 	Region           string
 	State            string
 	LaunchTime       time.Time
+	AttachTime       time.Time
 	Tags             []Tag
 }
 
@@ -91,6 +92,7 @@ func DiscoverEC2Instances() []Instance {
 				State:            string(instance.State.Name),
 				Tags:             ConvertToCustomTag(instance.Tags),
 				LaunchTime:       *instance.LaunchTime,
+				AttachTime:       *instance.NetworkInterfaces[0].Attachment.AttachTime,
 			})
 		}
 	}
@@ -157,7 +159,6 @@ func StartInstance(instanceID, region string) error {
 	if err != nil {
 		return fmt.Errorf("error starting instance %s: %v", instanceID, err)
 	}
-
 
 	logger.Info("instance started successfully", "instance", instanceID)
 	return nil

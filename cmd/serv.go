@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bananaops/cloudoff/internal/clean"
 	"github.com/bananaops/cloudoff/internal/scheduler"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
@@ -24,7 +25,7 @@ var serv = &cobra.Command{
 	Short: "Run cloudoff server",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		log.Println("DRYRUN:",os.Getenv("DRYRUN"))
+		log.Println("DRYRUN:", os.Getenv("DRYRUN"))
 
 		//define logger for http server error
 		handler := slog.NewJSONHandler(os.Stdout, nil)
@@ -45,19 +46,24 @@ var serv = &cobra.Command{
 
 		c := cron.New()
 
-		// Ajouter une tâche
+		// Add task schedule EC2
 		_, err := c.AddFunc("* * * * *", scheduler.ScheduleEC2Instance)
 		if err != nil {
 			log.Fatalf("Error adding scheduled task : %v", err)
 		}
 
-		// Démarrer le planificateur
+		// Add task clean EC2
+		_, err = c.AddFunc("* * * * *", clean.CleanEC2Instance)
+		if err != nil {
+			log.Fatalf("Error adding clean task : %v", err)
+		}
+
+		// start the cron scheduler
 		c.Start()
 		log.Println("task planner started")
 
-	
 		go func() {
-			// Exposer prometheus metrics
+			// Expose metrics on port 8080
 			slog.Info("metrics server listening on :8080")
 			if err := metricsServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				log.Fatal(fmt.Printf("Failed to serve metrics server: %v\n", err))

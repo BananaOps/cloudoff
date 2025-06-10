@@ -58,7 +58,6 @@ func DownscaleSchedule(instance ec2.Instance) {
 					fmt.Println("Erreur :", err)
 				}
 				if isInSchedule {
-					logger.Info("instance scheduled to stop", "instance", instance.ID, "schedule", schedule)
 					if os.Getenv("DRYRUN") != "true" {
 						err := ec2.StopInstance(instance.ID, instance.Region)
 						if err != nil {
@@ -100,7 +99,6 @@ func DownscaleSchedule(instance ec2.Instance) {
 			}
 
 			if !uptime {
-				logger.Info("instance scheduled to stop", "instance", instance.ID, "schedule", schedules)
 				if os.Getenv("DRYRUN") != "true" {
 					err := ec2.StopInstance(instance.ID, instance.Region)
 					if err != nil {
@@ -139,7 +137,6 @@ func UpscaleSchedule(instance ec2.Instance) {
 						logger.Error("error checking schedule for instance", "instance", instance.ID, "error", err)
 					}
 					if isInSchedule {
-						logger.Info("instance scheduled to start", "instance", instance.ID, "schedule", schedule)
 						if os.Getenv("DRYRUN") != "true" {
 							err := ec2.StartInstance(instance.ID, instance.Region)
 							if err != nil {
@@ -180,7 +177,6 @@ func UpscaleSchedule(instance ec2.Instance) {
 				}
 
 				if !uptime {
-					logger.Info("Instance scheduled to start", "instance", instance.ID, "schedule", schedules)
 					if os.Getenv("DRYRUN") != "true" {
 						err := ec2.StartInstance(instance.ID, instance.Region)
 						if err != nil {
