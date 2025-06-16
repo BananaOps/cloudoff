@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  cloudoff:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2025-06-16T08:28:07.737936904Z"
+    description: A Helm chart dedicated to deploy a homer dashboard in Kubernetes
+    digest: fc779a8f633fa6b83ad661bd7bb33243a930ae840636bee0a5f6a12a025a7087
+    name: cloudoff
+    type: application
+    urls:
+    - https://github.com/BananaOps/cloudoff/releases/download/cloudoff-1.0.0/cloudoff-1.0.0.tgz
+    version: 1.0.0
+generated: "2025-06-16T08:28:07.737942123Z"
