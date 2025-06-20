@@ -191,6 +191,35 @@ func UpscaleSchedule(instance ec2.Instance) {
 	}
 }
 
+// splitSchedule parses a schedule string into days, time range, and timezone.
+func splitSchedule(schedule string) ([]string, error) {
+
+	// Replace spaces with underscores for consistent parsing
+	normalized := strings.ReplaceAll(schedule, " ", "_")
+
+	// Split the string by underscores
+	parts := strings.SplitN(normalized, "_", 3)
+
+	// Validate the number of parts
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid schedule format")
+	}
+
+	// Prepare the result
+	result := make([]string, 3)
+	result[0] = parts[0] // Days (e.g., Mon-Fri)
+	result[1] = parts[1] // Time range (e.g., 09:00-17:00)
+
+	// Handle timezone if present
+	if len(parts) == 3 {
+		result[2] = parts[2] // Timezone (e.g., Europe/Paris)
+	} else {
+		result[2] = "" // No timezone provided
+	}
+
+	return result, nil
+}
+
 // ParseSchedule convert string into a slice of Schedule structs
 func ParseSchedule(input string) ([]Schedule, error) {
 	var schedules []Schedule
@@ -202,23 +231,20 @@ func ParseSchedule(input string) ([]Schedule, error) {
 		var timezone string
 		var days []string
 		var startTime, endTime string
-		var err error
 
 		if entry != "infinity" {
 
-			normalizedInput := strings.ReplaceAll(entry, "_", " ")
-			// Split the entry into parts
-			parts := strings.Fields(normalizedInput)
-			if len(parts) < 2 {
-				return nil, fmt.Errorf("invalid format for input : %s", entry)
+			split, err := splitSchedule(entry)
+			if err != nil {
+				return nil, fmt.Errorf("error splitting schedule entry %s: %v", entry, err)
 			}
 
 			// Extract days, time range, and timezone
-			daysPart := parts[0]
-			timePart := parts[1]
+			daysPart := split[0]
+			timePart := split[1]
 
-			if len(parts) > 2 {
-				timezone = parts[2]
+			if split[2] != "" {
+				timezone = split[2]
 			} else {
 				timezone = "UTC"
 			}
@@ -239,9 +265,9 @@ func ParseSchedule(input string) ([]Schedule, error) {
 		} else {
 			// If the entry is "infinity", we set default values
 			days = []string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"} // All days of the week
-			startTime = "00:00" // Start at midnight
-			endTime = "23:59"   // End at the end of the day
-			timezone = "UTC"    // Default timezone
+			startTime = "00:00"                                              // Start at midnight
+			endTime = "23:59"                                                // End at the end of the day
+			timezone = "UTC"                                                 // Default timezone
 		}
 
 		// Add the schedule to the list

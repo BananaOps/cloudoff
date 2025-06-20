@@ -227,6 +227,20 @@ func TestIsTimeInSchedule(t *testing.T) {
 			expected:    false,
 			wantErr:     false,
 		},
+		{
+			name:        "Within schedule time in Asia/Ho_Chi_Minh timezone",
+			currentTime: time.Date(2023, 10, 2, 10, 0, 0, 0, time.UTC), // Mon 10:00 UTC
+			schedule:    Schedule{Days: []string{"Mon"}, Start: "09:00", End: "17:00", Timezone: "Asia/Ho_Chi_Minh"},
+			expected:    true,
+			wantErr:     false,
+		},
+		{
+			name:        "Outside schedule time in Asia/Ho_Chi_Minh timezone",
+			currentTime: time.Date(2023, 10, 2, 18, 0, 0, 0, time.UTC), // Mon 18:00 UTC
+			schedule:    Schedule{Days: []string{"Mon"}, Start: "09:00", End: "17:00", Timezone: "Asia/Ho_Chi_Minh"},
+			expected:    false,
+			wantErr:     false,
+		},
 		{name: "Schedule with infinity",
 			currentTime: time.Date(2023, 10, 2, 10, 0, 0, 0, time.UTC), // Mon 10:00
 			schedule:    Schedule{Days: []string{"Mon"}, Start: "00:00", End: "23:59", Timezone: "UTC"},
@@ -247,4 +261,70 @@ func TestIsTimeInSchedule(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSplitSchedule(t *testing.T) {
+    tests := []struct {
+        name     string
+        input    string
+        expected []string
+        wantErr  bool
+    }{
+        {
+            name:     "Valid schedule with timezone",
+            input:    "Mon-Fri_09:00-17:00_Europe/Paris",
+            expected: []string{"Mon-Fri", "09:00-17:00", "Europe/Paris"},
+            wantErr:  false,
+        },
+        {
+            name:     "Valid schedule without timezone",
+            input:    "Mon-Fri_09:00-17:00",
+            expected: []string{"Mon-Fri", "09:00-17:00", ""},
+            wantErr:  false,
+        },
+        {
+            name:     "Schedule with spaces and timezone",
+            input:    "Mon-Fri 09:00-17:00 Europe/Paris",
+            expected: []string{"Mon-Fri", "09:00-17:00", "Europe/Paris"},
+            wantErr:  false,
+        },
+        {
+            name:     "Schedule with complex timezone",
+            input:    "Mon-Fri_09:00-17:00_Asia/Ho_Chi_Minh",
+            expected: []string{"Mon-Fri", "09:00-17:00", "Asia/Ho_Chi_Minh"},
+            wantErr:  false,
+        },
+        {
+            name:     "Invalid schedule format (missing time range)",
+            input:    "Mon-Fri",
+            expected: nil,
+            wantErr:  true,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            result, err := splitSchedule(tt.input)
+            if (err != nil) != tt.wantErr {
+                t.Errorf("splitSchedule() error = %v, wantErr %v", err, tt.wantErr)
+                return
+            }
+            if !tt.wantErr && !equalSlices(result, tt.expected) {
+                t.Errorf("splitSchedule() = %v, expected %v", result, tt.expected)
+            }
+        })
+    }
+}
+
+// Helper function to compare slices
+func equalSlices(a, b []string) bool {
+    if len(a) != len(b) {
+        return false
+    }
+    for i := range a {
+        if a[i] != b[i] {
+            return false
+        }
+    }
+    return true
 }
