@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/BananaOps/cloudoff/compare/v1.0.0...v1.0.1) (2025-06-20)
+
+
+### Bug Fixes
+
+* accept timezone with underscore ([#13](https://github.com/BananaOps/cloudoff/issues/13)) ([2a52f8b](https://github.com/BananaOps/cloudoff/commit/2a52f8b1aea654b0e3d9204903bd026ac5a1e424))
+
 ## 1.0.0 (2025-06-16)
 
 
