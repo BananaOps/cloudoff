@@ -32,7 +32,7 @@ require (
 require (
 	github.com/aws/aws-sdk-go-v2 v1.36.5
 	github.com/aws/aws-sdk-go-v2/config v1.29.15
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.225.2
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.227.0
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/prometheus/client_golang v1.22.0
 	github.com/spf13/pflag v1.0.6 // indirect
