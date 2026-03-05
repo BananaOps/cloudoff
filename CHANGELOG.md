@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/BananaOps/cloudoff/compare/v1.0.1...v1.1.0) (2026-03-05)
+
+
+### Features
+
+* add multi-architecture support for Docker image build ([#50](https://github.com/BananaOps/cloudoff/issues/50)) ([ab46463](https://github.com/BananaOps/cloudoff/commit/ab46463010c9bb2204fd5831cf981aa06d629c56))
+
 ## [1.0.1](https://github.com/BananaOps/cloudoff/compare/v1.0.0...v1.0.1) (2025-06-20)
 
 
